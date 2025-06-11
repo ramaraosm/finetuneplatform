@@ -1,0 +1,55 @@
+
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: . 
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - shared_uploads:/app/uploads
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_HF_USERNAME: ${HUGGING_FACE_USERNAME}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # This is the lightweight CPU mock worker
+  worker-cpu:
+    build:
+      context: .            
+      dockerfile: worker/Dockerfile.cpu
+    volumes:
+      - shared_uploads:/app/uploads
+     # - ./worker:/app  # Mount local code for easy changes
+    env_file:
+      - .env
+    environment:
+      # Explicitly set the mode for this worker
+      - WORKER_MODE=CPU_MOCK
+    depends_on:
+      - db
+      - backend
+
+volumes:
+  postgres_data:
+  shared_uploads:
