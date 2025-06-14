@@ -18,10 +18,14 @@ services:
     volumes:
       - ./backend/app:/app/app
       - shared_uploads:/app/uploads
+      # Add the prestart.sh script as a bind mount
+      - ./backend/app/prestart.sh:/app/prestart.sh
     env_file:
       - .env
     depends_on:
       - db
+    # Change the command to run the prestart script
+    command: ["/bin/bash", "/app/prestart.sh"] # <--- Updated command!      
 
   frontend:
     build:

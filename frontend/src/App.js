@@ -31,7 +31,7 @@ function App() {
 
     return (
         <div className="App">
-            <h1>On-Demand Model Finetuning</h1>
+            <h1>FinetuneIT - On-Demand Model Finetuning</h1>
             <FinetuneForm onSubmit={handleJobSubmit} isLoading={isLoading} />
             {error && <div className="status-box"><p className="status-message error">Error: {error}</p></div>}
             {job && <JobStatus initialJob={job} apiUrl={API_URL} />}
