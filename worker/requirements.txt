@@ -1,11 +1,5 @@
-unsloth[conda-new] @ git+https://github.com/unslothai/unsloth.git
-torch
+runpod
+requests
 sqlalchemy
 psycopg2-binary
 python-dotenv
-datasets
-trl
-transformers
-accelerate
-bitsandbytes
-huggingface_hub

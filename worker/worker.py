@@ -19,7 +19,7 @@ WORKER_MODE = os.getenv("WORKER_MODE", "GPU") # Default to GPU mode
 
 # Dynamically import the correct module
 if WORKER_MODE == "GPU":
-    import finetune
+    import finetune_with_custom_pod
 elif WORKER_MODE == "CPU_MOCK":
     import finetune_mock
 else:
@@ -53,7 +53,7 @@ def poll_for_jobs():
                 try:
                     # Execute the correct logic based on the mode
                     if WORKER_MODE == "GPU":
-                        finetune.run_finetuning_job(job_to_process)
+                        finetune_with_custom_pod.run_finetuning_job(job_to_process)
                     elif WORKER_MODE == "CPU_MOCK":
                         finetune_mock.run_mock_finetuning_job(job_to_process)
                     

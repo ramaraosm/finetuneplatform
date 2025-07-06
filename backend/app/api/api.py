@@ -64,8 +64,8 @@ def create_job(
     # Your existing logic remains the same, as job_in will now be correctly populated
     # ...
     logger.info('Inside create Job ')
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
+    if not file.filename.endswith('.jsonl'):
+        raise HTTPException(status_code=400, detail="Only JSONL files are allowed.")
 
     # Save the uploaded file
     file_path = UPLOAD_DIR / file.filename

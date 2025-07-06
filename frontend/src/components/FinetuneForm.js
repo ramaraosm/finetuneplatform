@@ -20,13 +20,13 @@ const FinetuneForm = ({ onSubmit, isLoading }) => {
         <form onSubmit={handleSubmit}>
             <div className="form-group">
                 <label htmlFor="file">Dataset (CSV with 'question' and 'answer' columns)</label>
-                <input id="file" type="file" accept=".csv" onChange={(e) => setFile(e.target.files[0])} required />
+                <input id="file" type="file" accept=".jsonl" onChange={(e) => setFile(e.target.files[0])} required />
             </div>
             <div className="form-group">
                 <label htmlFor="baseModel">Base Model</label>
                 <select id="baseModel" value={baseModel} onChange={(e) => setBaseModel(e.target.value)} required>
                     <option value="unsloth/Phi-3-mini-4k-instruct-gguf">Phi-3 Mini Instruct</option>
-                    <option value="unsloth/llama-3-8b-Instruct-gguf">Llama 3 8B Instruct</option>
+                    <option value="unsloth/llama-3-8b-Instruct">Llama 3 8B Instruct</option>                    
                 </select>
             </div>
             <div className="form-group">

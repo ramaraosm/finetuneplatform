@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   db:
@@ -11,16 +10,20 @@ services:
       - "5432:5432"
 
   backend:
-    build: ./backend
+    build:
+      context: . 
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
-      - shared_uploads:/app/uploads
+      - shared_uploads:/app/uploads      
+      - ./backend/app/prestart.sh:/app/prestart.sh
     env_file:
       - .env
     depends_on:
       - db
+    command: ["/bin/bash", "/app/prestart.sh"]
 
   frontend:
     build:
@@ -34,18 +37,16 @@ services:
       - backend
 
   worker:
-    build: ./worker
+    build:
+      context: .            
+      dockerfile: worker/Dockerfile
     volumes:
       - shared_uploads:/app/uploads
     env_file:
       - .env
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    environment:
+      # Explicitly set the mode for this worker
+      - WORKER_MODE=GPU
     depends_on:
       - db
       - backend
