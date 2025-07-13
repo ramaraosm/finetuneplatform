@@ -23,7 +23,7 @@ from typing import Optional, Literal
 from fastapi import Form # <--- Import Form
 
 class JobCreate(BaseModel):
-    base_model: Literal["unsloth/Phi-3-mini-4k-instruct-gguf", "unsloth/unsloth/llama-3-8b-Instruct"]
+    base_model: Literal["unsloth/Phi-3-mini-4k-instruct-gguf", "unsloth/llama-3-8b-Instruct"]
     dataset_type: Literal["Q&A", "Conversational", "Reasoning"]
     new_model_name: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_-]+$")
 
@@ -31,7 +31,7 @@ class JobCreate(BaseModel):
     @classmethod
     def as_form(
         cls,
-        base_model: Literal["unsloth/Phi-3-mini-4k-instruct-gguf", "unsloth/unsloth/llama-3-8b-Instruct"] = Form(...),
+        base_model: Literal["unsloth/Phi-3-mini-4k-instruct-gguf", "unsloth/llama-3-8b-Instruct"] = Form(...),
         dataset_type: Literal["Q&A", "Conversational", "Reasoning"] = Form(...),
         new_model_name: str = Form(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_-]+$"),
     ) -> "JobCreate": # The -> "JobCreate" is for type hinting, ensures it returns an instance of JobCreate
