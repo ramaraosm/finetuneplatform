@@ -2,14 +2,14 @@ sqlalchemy
 psycopg2-binary
 python-dotenv
 #########
-unsloth[conda-new] @ git+https://github.com/unslothai/unsloth.git
-torch
-sqlalchemy
-psycopg2-binary
-python-dotenv
-datasets
-trl
-transformers
-accelerate
-bitsandbytes
-huggingface_hub
+#unsloth[conda-new] @ git+https://github.com/unslothai/unsloth.git
+#torch
+#sqlalchemy
+#psycopg2-binary
+#python-dotenv
+#datasets
+#trl
+#transformers
+#accelerate
+#bitsandbytes
+#huggingface_hub
