@@ -19,10 +19,6 @@ STATUS_ENDPOINT = f"{SERVER_URL}/job_status"
 
 output_dir="/workspace/output"
 
-
-
-
-
 # --- Functions to interact with the executor server ---
 def send_script_to_pod(job, script_content, script_params):
     payload = {
@@ -108,14 +104,14 @@ def run_finetuning_job(job):
     # --- Parameters for the fine-tuning job ---
     # These will be passed to your finetune_template.py via the params_file
     JOB_PARAMETERS = {
-        "base_model": "unsloth/llama-3-8b-Instruct",
+        "base_model": f"{job.base_model}",
         "dataset_path": "/workspace/dataset.jsonl", # This must exist on the Pod's volume
         "output_dir": "/workspace/output",
         "epochs": 2,
         "batch_size": 4,
         "learning_rate": 2e-4,
         "gradient_accumulation_steps": 4,
-        "hf_repo_id": f"{HFACE_USERNAME}/{job.new_model_name}", # !!! IMPORTANT: CHANGE THIS !!!
+        "hf_repo_id": f"{HFACE_USERNAME}/Finetuned-{job.new_model_name}", # !!! IMPORTANT: CHANGE THIS !!!
         "hf_private_repo": False, # Set to True for a private repo
         "hf_commit_message": "Fine-tuning complete on RunPod with custom data",
     }

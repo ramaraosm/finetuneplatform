@@ -79,7 +79,7 @@ const JobStatus = ({ initialJob, apiUrl }) => {
             {job.status === 'COMPLETED' && (
                 <p className="status-message success">
                     Success! Your model is available at:{' '}
-                    <a href={`https://huggingface.co/${process.env.REACT_APP_HF_USERNAME}/${job.new_model_name}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`https://huggingface.co/${process.env.REACT_APP_HUGGING_FACE_USERNAME}/Finetuned-${job.new_model_name}`} target="_blank" rel="noopener noreferrer">
                         Hugging Face Hub
                     </a>
                 </p>

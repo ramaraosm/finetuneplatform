@@ -18,7 +18,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 WORKER_MODE = os.getenv("WORKER_MODE", "GPU") # Default to GPU mode
 
 # Dynamically import the correct module
-if WORKER_MODE == "GPU":
+if WORKER_MODE == "GPU-SERVERLESS":
+    import finetune_pod_serverless, s3_data_set_upload_service
+elif WORKER_MODE == "GPU":
     import finetune_with_custom_pod
 elif WORKER_MODE == "CPU_MOCK":
     import finetune_mock
@@ -52,8 +54,16 @@ def poll_for_jobs():
 
                 try:
                     # Execute the correct logic based on the mode
-                    if WORKER_MODE == "GPU":
+                    if WORKER_MODE == "GPU-SERVERLESS":
+                        #finetune_with_custom_pod.run_finetuning_job(job_to_process)
+                        #finetune_pod_serverless.run_finetuning_job(job_to_process)
+                        s3_data_set_upload_service.upload_data_set_to_s3(job_to_process)
+                        job_response = finetune_pod_serverless.run_finetuning_job(job_to_process)
+                    elif WORKER_MODE == "GPU":
                         finetune_with_custom_pod.run_finetuning_job(job_to_process)
+                        #finetune_pod_serverless.run_finetuning_job(job_to_process)
+                        #s3_data_set_upload_service.upload_data_set_to_s3(job_to_process)
+                        #job_response = finetune_pod_serverless.run_finetuning_job(job_to_process)    
                     elif WORKER_MODE == "CPU_MOCK":
                         finetune_mock.run_mock_finetuning_job(job_to_process)
                     

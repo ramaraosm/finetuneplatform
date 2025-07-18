@@ -43,6 +43,7 @@ def formatting_prompts_func(examples, tokenizer_instance):
     return { "text" : texts, }
 
 if __name__ == "__main__":
+    print(f"Executing dynamic fine-tuning script")
     parser = argparse.ArgumentParser(description="Dynamic Unsloth Fine-tuning Script")
     parser.add_argument("--params_file", type=str, required=True,
                         help="Path to a JSON file containing job parameters.")
@@ -173,8 +174,8 @@ if __name__ == "__main__":
             #     # Load adapter weights
             #     local_model_path=output_dir,
             # )
-            model.push_to_hub(hf_repo_id, token=hf_token, commit_message=hf_commit_message)
-            tokenizer.push_to_hub(hf_repo_id, token=hf_token) # Tokenizer also gets pushed
+            trainer.model.push_to_hub(hf_repo_id, token=hf_token, commit_message=hf_commit_message)
+            final_tokenizer.push_to_hub(hf_repo_id, token=hf_token) # Tokenizer also gets pushed
 
             # A more generic way using transformers, which should work if output_dir
             # contains all necessary files (including adapter config for PEFT models)
