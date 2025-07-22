@@ -11,3 +11,8 @@ COPY /worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY /worker /app
 CMD ["python", "worker.py"]
+# Set environment variables (optional, can be passed via docker-compose)
+# ENV REDIS_BROKER_URL="redis://redis:6379/0"
+
+# Command is now defined in docker-compose.yml
+# CMD ["celery", "-A", "app.worker", "worker", "--loglevel=info"]

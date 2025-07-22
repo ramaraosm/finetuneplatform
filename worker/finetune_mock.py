@@ -15,13 +15,13 @@ def run_mock_finetuning_job(job):
     
     # Simulate the download and model loading
     print("Simulating model and data loading...")
-    time.sleep(5)
+    time.sleep(1)
     
     # Simulate the training process
     print("Simulating finetuning training loop... (will take ~30 seconds)")
-    for i in range(10):
+    for i in range(5):
         print(f"Mock training step {i+1}/10...")
-        time.sleep(3)
+        time.sleep(1)
     
     # Simulate pushing to hub
     repo_id = f"{HF_USERNAME}/{job.new_model_name}"

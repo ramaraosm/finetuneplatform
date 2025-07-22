@@ -5,6 +5,9 @@ import time
 import base64
 from dotenv import load_dotenv
 from shared.utils import logger
+from sqlalchemy import create_engine, update
+from sqlalchemy.orm import sessionmaker
+from shared.db.base import Job
 
 logger = logger.setup_logger('finetune_with custom_pod')
 
@@ -18,6 +21,20 @@ EXECUTE_ENDPOINT = f"{SERVER_URL}/execute_script"
 STATUS_ENDPOINT = f"{SERVER_URL}/job_status"
 
 output_dir="/workspace/output"
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def update_job_status(db, job_id, status, error_message=None):
+    stmt = (
+        update(Job)
+        .where(Job.id == job_id)
+        .values(status=status, error_message=error_message)
+    )
+    db.execute(stmt)
+    db.commit()
+    print(f"Updated job {job_id} to status {status}")
 
 # --- Functions to interact with the executor server ---
 def send_script_to_pod(job, script_content, script_params):
@@ -38,6 +55,7 @@ def send_script_to_pod(job, script_content, script_params):
 
 def poll_job_status(job_id):
         try:
+            time.sleep(15) # Poll every 15 seconds
             response = requests.get(f"{STATUS_ENDPOINT}/{job_id}", timeout=10)
             response.raise_for_status()
             status_data = response.json()
@@ -51,7 +69,7 @@ def poll_job_status(job_id):
             if output:
                 logger.info(f"--- Script Output (partial) ---\n{output[-1000:]}\n--- End Output ---") # Show last 1000 chars
 
-            if status in ["COMPLETED", "FAILED", "ERROR"]:
+            if status in ["COMPLETED", "FAILED", "ERROR","IN_PROGRESS"]:
                 logger.info(f"\n--- Final Job Details for {job_id} ---")
                 logger.info(f"Final Status: {status}")
                 if output:
@@ -101,6 +119,9 @@ def run_finetuning_job(job):
     with open(FINE_TUNE_SCRIPT_PATH, "r") as f:
         finetune_script_content = f.read()
 
+    print(f'wandb api key :  {os.getenv("WANDB_API_KEY")}')
+     
+
     # --- Parameters for the fine-tuning job ---
     # These will be passed to your finetune_template.py via the params_file
     JOB_PARAMETERS = {
@@ -114,6 +135,9 @@ def run_finetuning_job(job):
         "hf_repo_id": f"{HFACE_USERNAME}/Finetuned-{job.new_model_name}", # !!! IMPORTANT: CHANGE THIS !!!
         "hf_private_repo": False, # Set to True for a private repo
         "hf_commit_message": "Fine-tuning complete on RunPod with custom data",
+        "new_model_name":f"Finetuned-{job.new_model_name}",
+        "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
+        "HF_TOKEN": os.getenv("HUGGING_FACE_TOKEN"),
     }
 
     # Ensure Pod IP and Port are correctly configured
@@ -151,6 +175,12 @@ def run_finetuning_job(job):
 
         # Step 2: Poll for job status
         final_status_data = poll_job_status(job_id)
+        if final_status_data:
+            logger.info(f"job {job_id}. final_status_data Status: {final_status_data.get('status')}")
+            while final_status_data is None or (final_status_data.get('status') != 'COMPLETED' and final_status_data.get('status') != 'FAILED'):
+                final_status_data = poll_job_status(job_id)
+                if final_status_data:
+                    logger.info(f"job {job_id}. final_status_data Status: {final_status_data.get('status')}")
 
         if final_status_data:
             logger.info(f"\nJob {job_id} finished with final status: {final_status_data.get('status')}")

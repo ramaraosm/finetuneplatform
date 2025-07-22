@@ -1,6 +1,7 @@
 # finetune_template.py
 import argparse
 import os
+from dotenv import load_dotenv
 import json
 import sys
 import torch
@@ -12,6 +13,13 @@ from huggingface_hub import HfApi, login, create_repo # Import HfApi, login, cre
 # Assuming you have transformers and other libraries installed by Unsloth
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 from peft import PeftModel, LoraConfig # For adapter models
+import wandb # Import wandb
+
+
+load_dotenv()
+
+WANDB_PROJECT_NAME = "FinetuneIT-WANDB-Project"
+
 
 # --- Helper function for prompt formatting ---
 ALPACA_PROMPT = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
@@ -61,10 +69,15 @@ if __name__ == "__main__":
     batch_size = params.get("batch_size", 4)
     learning_rate = params.get("learning_rate", 2e-4)
     gradient_accumulation_steps = params.get("gradient_accumulation_steps", 4)
-
+    new_model_name= params.get("new_model_name", "my_finetuned_model")
+    WANDB_API_KEY = params.get("WANDB_API_KEY", os.getenv("WANDB_API_KEY"))
+    HF_TOKEN= params.get("HF_TOKEN", os.getenv("HF_TOKEN"))
     print(f"Executing dynamic fine-tuning script with parameters: {params}")
 
     os.makedirs(output_dir, exist_ok=True)
+
+    if WANDB_API_KEY:
+        wandb.login(key=WANDB_API_KEY)   
 
     if not os.path.exists(dataset_path):
         print(f"ERROR: Dataset NOT found at: {dataset_path}. Please ensure it's uploaded to your volume.")
@@ -73,6 +86,26 @@ if __name__ == "__main__":
         print(f"Dataset found at: {dataset_path}")
 
     try:
+        # Initialize a W&B run for this job
+        # Use job_id for a unique run name
+        max_seq_length = 2048
+        wandb_run_name = f"finetune-job-{new_model_name}-{base_model.replace('/', '-')}-e{epochs}"
+        wandb.init(
+            project=WANDB_PROJECT_NAME,
+            name=wandb_run_name,
+            config={ # Log all your hyperparameters and settings
+                "base_model": base_model,
+                "dataset_path": dataset_path,
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "learning_rate": learning_rate,
+                "gradient_accumulation_steps": gradient_accumulation_steps,
+                "max_seq_length": max_seq_length,
+                "bf16":  torch.cuda.is_bf16_supported(),
+                "fp16": not torch.cuda.is_bf16_supported(),
+            }
+        )
+
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = base_model, max_seq_length = 2048, dtype = None, load_in_4bit = True,
         )
@@ -93,7 +126,9 @@ if __name__ == "__main__":
             fp16 = not torch.cuda.is_bf16_supported(), bf16 = torch.cuda.is_bf16_supported(),
             logging_steps = 10, optim = "adamw_8bit", weight_decay = 0.01,
             lr_scheduler_type = "linear", seed = 3407, output_dir = output_dir,
-            report_to = "none", save_strategy="epoch", save_total_limit=1,
+            save_strategy="epoch", save_total_limit=1,report_to="wandb",
+            run_name=wandb_run_name, # Pass run_name to Trainer (optional, as wandb.init handles it)
+            ddp_find_unused_parameters=False if torch.cuda.device_count() > 1 else None,
         )
 
         trainer = SFTTrainer(
@@ -104,13 +139,21 @@ if __name__ == "__main__":
         print(f"Starting training for {epochs} epochs...")
         trainer.train()
         print("Training completed.")
-
+        final_model_path = os.path.join(output_dir, "final_model")
         save_path_adapters = os.path.join(output_dir, "finetuned_adapters")
         trainer.model.save_pretrained(save_path_adapters)
         tokenizer.save_pretrained(save_path_adapters)
         print(f"LoRA adapters saved to: {save_path_adapters}")
 
         print("Dynamic fine-tuning process finished successfully.")
+
+        # --- Log the final model as a W&B Artifact (Optional but Recommended) ---
+        artifact = wandb.Artifact(name=f"{base_model.split('/')[-1]}-finetuned", type="model")
+        #artifact.add_dir(final_model_path)
+        wandb.log_artifact(artifact)
+
+        # --- End W&B Run ---
+        wandb.finish()  
 
         # --- Hugging Face specific parameters ---
         # Example repo ID: "your-hf-username/your-model-name"
@@ -126,7 +169,7 @@ if __name__ == "__main__":
         # 1. Log in to Hugging Face Hub using the HF_TOKEN environment variable
         # This will automatically pick up the token if set in env vars.
         # It's good practice to explicitly check if token is there.
-        hf_token = os.getenv("HF_TOKEN")
+        hf_token = HF_TOKEN
         if hf_token:
             login(token=hf_token)
             print("Successfully logged into Hugging Face Hub.")

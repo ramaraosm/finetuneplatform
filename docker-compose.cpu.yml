@@ -29,7 +29,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         REACT_APP_HF_USERNAME: ${HUGGING_FACE_USERNAME}
     ports:

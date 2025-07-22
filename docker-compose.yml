@@ -9,6 +9,11 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"      
+
   backend:
     build:
       context: . 
@@ -17,7 +22,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
-      - shared_uploads:/app/uploads      
+      - shared_uploads:/app/uploads    
+      - ./celery_worker:/app/celery_worker
       - ./backend/app/prestart.sh:/app/prestart.sh
     env_file:
       - .env
@@ -51,6 +57,25 @@ services:
     depends_on:
       - db
       - backend
+
+  celery_worker:
+    build:
+      context: .            
+      dockerfile: celery_worker/Dockerfile
+    volumes:
+      - shared_uploads:/app/uploads
+      - ./celery_worker:/app/celery_worker
+    env_file:
+      - .env
+    environment:
+      # Explicitly set the mode for this worker
+      - WORKER_MODE=GPU-SERVERLESS
+    depends_on:
+      - db
+      - backend
+      - redis
+    #command: ["celery", "-A", "celery_worker.worker", "worker", "--loglevel=info"]
+
 
 volumes:
   postgres_data:

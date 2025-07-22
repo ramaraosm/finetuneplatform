@@ -19,7 +19,7 @@ const FinetuneForm = ({ onSubmit, isLoading }) => {
     return (
         <form onSubmit={handleSubmit}>
             <div className="form-group">
-                <label htmlFor="file">Dataset (CSV with 'question' and 'answer' columns)</label>
+                <label htmlFor="file">Dataset (JSONL with 'input' and 'output' columns)</label>
                 <input id="file" type="file" accept=".jsonl" onChange={(e) => setFile(e.target.files[0])} required />
             </div>
             <div className="form-group">

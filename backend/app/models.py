@@ -42,11 +42,30 @@ class JobCreate(BaseModel):
         )
 
 class Job(BaseModel):
-    id: int
+    id: str
     status: str
     base_model: str
-    new_model_name: str
+    new_model_name: Optional[str] = None
     error_message: Optional[str] = None
 
-    class Config:
-        from_attributes = True        
+class Config:
+        from_attributes = True       
+
+# Define a Pydantic model for the request body (input string)
+class ChatInput(BaseModel):
+    prompt: str
+    modelId: str
+
+# Define a Pydantic model for the response body (output string)
+class ChatResponse(BaseModel):
+    generated_text: str     
+
+class InferenceRequestInput(BaseModel):
+    job_id:str
+    prompt: str
+    huggingface_repo: str
+
+class InferenceRequestResponse(BaseModel):
+    job_id: str
+    status: str # "accepted", "processing_inference", "completed_inference", "failed_inference"
+    result: dict = None # To hold the inference output data        

@@ -59,15 +59,17 @@ def poll_for_jobs():
                         #finetune_pod_serverless.run_finetuning_job(job_to_process)
                         s3_data_set_upload_service.upload_data_set_to_s3(job_to_process)
                         job_response = finetune_pod_serverless.run_finetuning_job(job_to_process)
+                        update_job_status(db, job_to_process.id, "COMPLETED")
                     elif WORKER_MODE == "GPU":
                         finetune_with_custom_pod.run_finetuning_job(job_to_process)
+                        update_job_status(db, job_to_process.id, "COMPLETED")
                         #finetune_pod_serverless.run_finetuning_job(job_to_process)
                         #s3_data_set_upload_service.upload_data_set_to_s3(job_to_process)
                         #job_response = finetune_pod_serverless.run_finetuning_job(job_to_process)    
                     elif WORKER_MODE == "CPU_MOCK":
                         finetune_mock.run_mock_finetuning_job(job_to_process)
+                        update_job_status(db, job_to_process.id, "COMPLETED")
                     
-                    update_job_status(db, job_to_process.id, "COMPLETED")
 
                 except Exception as e:
                     print(f"Error processing job {job_to_process.id}: {e}")
