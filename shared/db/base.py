@@ -15,7 +15,7 @@ class Job(Base):
     status = Column(String, default="QUEUED")
     task_type = Column(String, default="finetuning")
     input_data = Column(JSON, nullable=True) # New column to store input for inference jobs
-    result_data = Column(JSON, nullable=True) # New column for storing inference results (JSONB in Postgres)    
+    result_data = Column(Text, nullable=True) # New column for storing inference results (JSONB in Postgres)    
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))

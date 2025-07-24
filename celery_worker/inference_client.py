@@ -7,7 +7,7 @@ import time # For polling in asynchronous calls
 # --- Configuration ---
 # Set these environment variables or replace with your actual values
 RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY", "YOUR_RUNPOD_API_KEY")
-RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID", "YOUR_RUNPOD_ENDPOINT_ID")
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_SERVERLESS_ENDPOINT_ID", "YOUR_RUNPOD_ENDPOINT_ID")
 
 # The base URL for RunPod Serverless API
 RUNPOD_API_BASE_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}"
@@ -18,7 +18,7 @@ HEADERS = {
     "Authorization": f"Bearer {RUNPOD_API_KEY}"
 }
 
-def call_runpod_sync(prompt: str, huggingface_repo: str = None, job_id: str = None):
+def call_runpod_sync(job_id: str = None, prompt: str = None, huggingface_repo: str = None):
     """
     Calls the RunPod Serverless endpoint synchronously using /runsync.
     This is best for quick inferences (under ~30 seconds) where you want an immediate result.
@@ -46,7 +46,7 @@ def call_runpod_sync(prompt: str, huggingface_repo: str = None, job_id: str = No
     print(f"Sending payload: {json.dumps(payload, indent=2)}")
 
     try:
-        response = requests.post(url, headers=HEADERS, json=payload, timeout=300) # Increased timeout
+        response = requests.post(url, headers=HEADERS, json=payload, timeout=600) # Increased timeout
         response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
 
         result = response.json()

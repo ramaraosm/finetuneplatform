@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import shutil
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -6,12 +7,15 @@ from sqlalchemy.orm import Session
 from .. import models
 from ..db.session import SessionLocal
 from shared.utils import logger
+from shared.utils.celery_app import celery_app
 from shared.db import base
 import uuid
-from celery_worker.celery_app import celery_app # <--- Import the Celery app instance
-from celery_worker.worker import run_runpod_inference_task # <--- Import the specific task
+
+#from celery_worker.worker import run_runpod_inference_task # <--- Import the specific task
 
 logger = logger.setup_logger('backend')
+
+load_dotenv()
 
 api_router = APIRouter()
 
@@ -95,13 +99,14 @@ def get_job_status(job_id: str, db: Session = Depends(get_db)):
     return job
 
 @api_router.post(
-    "/inference/generate-text", # New endpoint for inference
+    "/inference/generate_text", # New endpoint for inference
     response_model=models.InferenceRequestResponse,
     status_code=202, # 202 Accepted for async processing
     summary="Submit text for asynchronous inference via RunPod"
 )
-async def submit_inference_request(input_data: models.InferenceRequestInput):
+def submit_inference_request(input_data: models.InferenceRequestInput):
     request_id = str(uuid.uuid4())
+    print(f'request_id for inference: {request_id}')
     print(f'input_data submitted for inference: {input_data}')
     db = SessionLocal()
     try:
@@ -122,8 +127,10 @@ async def submit_inference_request(input_data: models.InferenceRequestInput):
 
         # Delegate the actual inference task to the Celery worker
         # This is the "call a method exposed from worker" part
-        run_runpod_inference_task.delay(input_data.job_id,input_data.prompt, input_data.huggingface_repo) # .delay() sends to message queue
-
+        logger.info('Before calling run_runpod_inference_task')
+        print("[INFO] Celery broker URL:", celery_app.conf.broker_url)
+        task = celery_app.send_task("run_runpod_inference_task", args=[request_id,input_data.prompt, input_data.huggingface_repo])
+        #run_runpod_inference_task.delay(input_data.job_id,input_data.prompt, input_data.huggingface_repo) # .delay() sends to message queue
         return models.InferenceRequestResponse(job_id=request_id, status="accepted")
     except Exception as e:
         db.rollback()
@@ -137,18 +144,22 @@ async def submit_inference_request(input_data: models.InferenceRequestInput):
     response_model=models.InferenceRequestResponse,
     summary="Get status and result of an inference request"
 )
-async def get_inference_result(request_id: str):
+def get_inference_result(request_id: str, db: Session = Depends(get_db)):
     db = SessionLocal()
     try:
-        job = db.query(models.Job).filter(models.Job.id == request_id).first()
+        job = db.query(base.Job).filter(base.Job.id == request_id).first()
+        #job = db.query(models.Job).filter(models.Job.id == request_id).first()
         if not job:
             raise HTTPException(status_code=404, detail="Inference request not found.")
 
         return models.InferenceRequestResponse(
-            request_id=job.id,
+            job_id=job.id,
             status=job.status,
             result=job.result_data, # Assuming result_data column exists and stores the dict
-            error_message=job.error_message
+            error_message=job.error_message if job.error_message is not None else ""
         )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to submit inference status request: {e}")
     finally:
         db.close()

@@ -7,4 +7,5 @@ python-dotenv
 cryptography
 python-multipart
 celery
+celery[redis]
 requests

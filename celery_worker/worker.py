@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from celery import Celery
 import json # New import for Redis communication
 from .inference_client import call_runpod_sync, call_runpod_async # Assuming these are the functions you want to use
-from .celery_app import celery_app
+from shared.utils.celery_app import celery_app
 
 from shared.utils import logger
 logger = logger.setup_logger('celery-worker')
@@ -14,6 +14,8 @@ logger = logger.setup_logger('celery-worker')
 # Load environment variables
 load_dotenv()
 
+#celery_app.autodiscover_tasks(['celery_worker.worker']) # Tells Celery to find tasks in this package
+print("[INFO] Celery broker URL:", celery_app.conf.broker_url)
 # Add the parent directory to the path to import from backend
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from shared.db.base import Job # Assuming Job model is in shared.db.base
@@ -66,7 +68,7 @@ def run_runpod_inference_task(self, job_id: str, prompt: str, huggingface_repo:s
             logger.error(f"Inference Job with ID {job_id} not found in DB.")
             # Create a dummy job or handle error
             # For simplicity, let's create one if not found. In production, backend should create it.
-            new_job = Job(id=job_id, status="ACCEPTED", task_type="inference", model_name="runpod_inference", dataset_path="n/a")
+            new_job = Job(id=job_id, status="ACCEPTED", task_type="inference", base_model="ramaraohface/llama-finetuned38", dataset_path="n/a")
             db.add(new_job)
             db.commit()
             job_to_process = new_job
@@ -82,8 +84,11 @@ def run_runpod_inference_task(self, job_id: str, prompt: str, huggingface_repo:s
         # that handles communication with RunPod and returns the inference result.
         inference_result = call_runpod_sync(job_id,prompt,huggingface_repo)
 
-        logger.info(f"RunPod inference for {job_id} completed. Result: {inference_result[:50]}")
-        update_job_status(db, job_to_process.id, "COMPLETED_INFERENCE", result_data={"result": inference_result})
+        inference_output_text = inference_result.get('output', {}).get('inference_output')
+
+        logger.info(f"RunPod inference for {job_id} completed. Result: {inference_result}")
+        logger.info(f"RunPod inference for {job_id} inference_output_text extracted. Result: {inference_output_text}")
+        update_job_status(db, job_to_process.id, "COMPLETED_INFERENCE",result_data=inference_output_text)
 
     except Exception as e:
         logger.error(f"Error during RunPod inference for {job_id}: {e}", exc_info=True)

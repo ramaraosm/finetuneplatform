@@ -61,11 +61,27 @@ class ChatResponse(BaseModel):
     generated_text: str     
 
 class InferenceRequestInput(BaseModel):
-    job_id:str
     prompt: str
     huggingface_repo: str
 
+# Define the inner 'Output' structure
+class InferenceOutputData(BaseModel):
+    inference_output: str
+    job_id: str
+    status: str # e.g., "success"
+
+# Define the intermediate 'Result' structure
+class RunPodResult(BaseModel):
+    delayTime: Optional[int] = None
+    executionTime: Optional[int] = None
+    id: Optional[str] = None
+    output: Optional[InferenceOutputData] = None # <--- THIS IS THE CRUCIAL CHANGE
+    status: Optional[str] = None # e.g., "COMPLETED" or "success"
+    workerId: Optional[str] = None
+
+# Update InferenceRequestResponse to match the new nested 'result'
 class InferenceRequestResponse(BaseModel):
     job_id: str
-    status: str # "accepted", "processing_inference", "completed_inference", "failed_inference"
-    result: dict = None # To hold the inference output data        
+    status: str # This is the top-level status, e.g., "COMPLETED_INFERENCE"
+    result: Optional[str] = None # This is already Optional, which is good
+    error_message: Optional[str] = None    
